@@ -1,0 +1,37 @@
+Folders for Bank Tags
+Copyright (c) 2026 710 710 710
+
+This plugin is an add-on to the Bank Tags plugin bundled with RuneLite, which is
+Copyright (c) 2018 Tomas Slusny, Copyright (c) 2018 Ron Young and Copyright (c)
+2023 Adam <Adam@sigterm.info>, and is distributed under the BSD 2-Clause licence
+-- the same licence as this plugin.
+
+The idea comes from the Bank Tag Folders plugin by KingKj52
+(https://github.com/kingkj52/bank-tag-folders), which this was written to
+replace. No code is taken from it; the plugin below was written afresh against
+the core plugin's source, and works by cooperating with core's tab strip rather
+than standing in for it.
+
+This plugin does not port or reimplement any part of
+that tab strip. The core plugin draws its own column and this one
+rearranges it. What is derived from the core source is limited to the small
+amount of shared knowledge needed to cooperate with it:
+
+  - The condition used to detect a bank resize inside [proc,bankmain_size_check]
+    (which stack arguments hold the widget, width and height), taken from
+    TabInterface.onScriptPreFired.
+
+  - The one-pixel gap between rows, and the convention that a widget's options
+    are numbered from index one, both matching TabInterface so that folder rows
+    line up with tag tabs and behave like them.
+
+  - The observation that nulling the dragged-on widget is how a drop is
+    cancelled, which TabInterface documents in a comment and uses to honour its
+    own "prevent tag tab drags" setting.
+
+Everything else about the core column -- its height, its width, the number of
+rows that fit, where the first row starts, and the sprite behind a tab -- is
+read off the widgets the core plugin has already created, at runtime, rather
+than copied from its source.
+
+RuneLite is Copyright (c) 2016-2026 the RuneLite authors.
