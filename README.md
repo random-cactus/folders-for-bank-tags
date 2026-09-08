@@ -13,6 +13,9 @@ replacement. Bank Tags draws its column exactly as it always has, with its "Tag
 tabs" option left on, and this plugin runs straight afterwards and rearranges
 the rows.
 
+![Collapsed Folder](collapsed.png "Collapsed Folder")
+![Expanded Folder](expanded.png "Expanded Folder")
+
 Every tab in the column is still Bank Tags' own widget, so renaming, deleting,
 importing and exporting, icons, layouts, reordering by dragging, dragging a bank
 item onto a tab to tag it and remembering the last open tag all still work,
