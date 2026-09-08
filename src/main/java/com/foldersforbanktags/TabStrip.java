@@ -89,6 +89,13 @@ class TabStrip
 	private int childCount = -1;
 
 	/**
+	 * Whether the last draw left any widgets of ours in the column. Survives
+	 * {@link #forget()}, which is the point: it is what tells us our rows are
+	 * gone once the identity check has nothing left to compare.
+	 */
+	private boolean hadRows;
+
+	/**
 	 * Set while shutting down. The row builder then ignores folders and produces
 	 * core's flat list, which is what the scroll hooks we can't uninstall will
 	 * keep drawing until the bank is reopened.
@@ -407,6 +414,7 @@ class TabStrip
 
 		Widget[] children = column.parent.getChildren();
 		childCount = children == null ? -1 : children.length;
+		hadRows = !created.isEmpty();
 	}
 
 	/**
@@ -601,9 +609,14 @@ class TabStrip
 	 * every tick, which is what it takes to catch everything core does to its own
 	 * tabs without telling anyone.
 	 *
-	 * Two checks, because either alone leaves a hole: our rows going missing
-	 * catches a rebuild while a folder is on screen, and the child count changing
+	 * Three checks, because each alone leaves a hole. Our rows going missing
+	 * catches a rebuild while a folder is on screen. The child count changing
 	 * catches one when none is, since then there is nothing of ours to go missing.
+	 * And having had rows but holding none catches the case both of those miss:
+	 * scan() forgets our widgets before it decides whether it can draw, so a
+	 * redraw that bails leaves nothing for the identity check to compare and a
+	 * child count that has already been accepted. Importing a tag tab hits this,
+	 * because core rebuilds the column itself and fires no script we listen for.
 	 */
 	void heal()
 	{
@@ -624,13 +637,20 @@ class TabStrip
 			return;
 		}
 
-		if (children.length != childCount || !intact(children))
+		if (stale(children.length, childCount, intact(children), hadRows, !created.isEmpty()))
 		{
 			// Recorded before the redraw, so one that can't do anything is
-			// not retried every tick.
+			// not retried every tick. The third signal is deliberately not
+			// covered by that: it stays true until a draw actually succeeds.
 			childCount = children.length;
 			refresh();
 		}
+	}
+
+	/** The three signals, apart from the widgets, so they can be tested. */
+	static boolean stale(int children, int lastChildCount, boolean intact, boolean hadRows, boolean holdingRows)
+	{
+		return children != lastChildCount || !intact || (hadRows && !holdingRows);
 	}
 
 	// ------------------------------------------------------------------
@@ -672,6 +692,7 @@ class TabStrip
 		hooked = null;
 		offset = 0;
 		childCount = -1;
+		hadRows = false;
 	}
 
 	/**
@@ -685,5 +706,6 @@ class TabStrip
 		detached = true;
 		refresh();
 		forget();
+		hadRows = false;
 	}
 }
