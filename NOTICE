@@ -6,16 +6,17 @@ Copyright (c) 2018 Tomas Slusny, Copyright (c) 2018 Ron Young and Copyright (c)
 2023 Adam <Adam@sigterm.info>, and is distributed under the BSD 2-Clause licence
 -- the same licence as this plugin.
 
-The idea comes from the Bank Tag Folders plugin by KingKj52
-(https://github.com/kingkj52/bank-tag-folders), which this was written to
-replace. No code is taken from it; the plugin below was written afresh against
-the core plugin's source, and works by cooperating with core's tab strip rather
-than standing in for it.
+This plugin started from the Bank Tag Folders plugin by KingKj52
+(https://github.com/kingkj52/bank-tag-folders) and is a derivative of it. That
+plugin is Copyright (c) 2026 KingKj52 and is distributed under the BSD 2-Clause
+licence; its copyright notice is retained in LICENSE, as that licence requires.
 
-This plugin does not port or reimplement any part of
-that tab strip. The core plugin draws its own column and this one
-rearranges it. What is derived from the core source is limited to the small
-amount of shared knowledge needed to cooperate with it:
+It was written with AI assistance.
+
+This plugin does not port or reimplement any part of the core Bank Tags tab
+strip. The core plugin draws its own column and this one rearranges it. What is
+derived from the core source is limited to the small amount of shared knowledge
+needed to cooperate with it:
 
   - The condition used to detect a bank resize inside [proc,bankmain_size_check]
     (which stack arguments hold the widget, width and height), taken from

@@ -117,6 +117,8 @@ For the plugin hub review, in short:
 
 ## Compared to the other bank tag plugins
 
+- **Bank Tag Folders** by KingKj52 is what this was built from, and is still on
+  the hub and still maintained. See the credits below.
 - **Bank Tag Layouts** arranges the items inside a tab; this arranges the tabs.
   Since the core column stays switched on, Bank Tag Layouts sees the state it
   always has and needs no accommodation.
@@ -165,5 +167,11 @@ Copy `build/libs/folders-for-bank-tags-1.0.jar` into
 `.runelite/sideloaded-plugins/` to run it locally.
 
 ## Licence and credits
+
+This plugin was built from the [Bank Tag Folders](https://github.com/kingkj52/bank-tag-folders)
+plugin by KingKj52 and is a derivative of it. That plugin is BSD 2-Clause and so
+is this one, and KingKj52's copyright notice is kept in `LICENSE`.
+
+It was written with AI assistance.
 
 BSD 2-Clause. See `LICENSE` and `NOTICE`.
