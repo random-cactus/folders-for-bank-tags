@@ -32,6 +32,13 @@ class TabOrder
 {
 	private final TabManager tabManager;
 
+	/**
+	 * Set while we are writing the tab list. Bank Tags' save posts its config
+	 * event on the calling thread, so this is still set when our own handler sees
+	 * it, which is what stops our write looking like someone else's edit.
+	 */
+	private boolean writing;
+
 	@Inject
 	TabOrder(TabManager tabManager)
 	{
@@ -110,7 +117,7 @@ class TabOrder
 			return false;
 		}
 
-		tabManager.save();
+		write();
 		return true;
 	}
 
@@ -161,8 +168,27 @@ class TabOrder
 
 		tabs.clear();
 		tabs.addAll(reordered);
-		tabManager.save();
+		write();
 		return true;
+	}
+
+	/** Whether the tab list is being written by us right now. */
+	boolean isWriting()
+	{
+		return writing;
+	}
+
+	private void write()
+	{
+		writing = true;
+		try
+		{
+			tabManager.save();
+		}
+		finally
+		{
+			writing = false;
+		}
 	}
 
 	/**

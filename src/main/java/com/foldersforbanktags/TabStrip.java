@@ -53,6 +53,16 @@ class TabStrip
 	/** Gap between rows, the same as TabInterface.MARGIN. */
 	private static final int MARGIN = 1;
 
+	/**
+	 * Room above and below a full-size icon on a shortened row. An item has one
+	 * native icon size, so the shortest a row can be drawn without the client
+	 * resampling the icon into a blur is the icon itself plus this.
+	 */
+	private static final int COMPACT_PADDING = 2;
+
+	/** Inset of a tab's icon from the tab's left edge, as TabInterface places it. */
+	private static final int ICON_INSET = 3;
+
 	static final int OP_TOGGLE = 1;
 	static final int OP_RENAME = 2;
 	static final int OP_ICON = 3;
@@ -89,11 +99,29 @@ class TabStrip
 	private int childCount = -1;
 
 	/**
+	 * A tab's size as core makes it. Read once per bank, before we have drawn
+	 * anything, because shrinking a folder's tabs would otherwise be measured as
+	 * the new normal on the next pass and they would shrink again every redraw.
+	 */
+	private int nativeRowHeight = -1;
+	private int nativeRowWidth = -1;
+
+	/**
 	 * Whether the last draw left any widgets of ours in the column. Survives
 	 * {@link #forget()}, which is the point: it is what tells us our rows are
 	 * gone once the identity check has nothing left to compare.
 	 */
 	private boolean hadRows;
+
+	/**
+	 * The tab list the folder membership was last checked against, and the last
+	 * regrouping we asked Bank Tags to store. Core rebuilds the column on every
+	 * bank build, an item being moved included, so both exist to keep a redraw
+	 * that has nothing new to say from doing the work anyway.
+	 */
+	private List<String> checked;
+	private List<String> requested;
+	private List<String> requestedFor;
 
 	/**
 	 * Set while shutting down. The row builder then ignores folders and produces
@@ -141,7 +169,7 @@ class TabStrip
 		private int rowWidth;
 		private int rowX;
 		private int firstY;
-		private int slots;
+		private int available;
 		private int tabSprite;
 	}
 
@@ -228,8 +256,13 @@ class TabStrip
 		}
 
 		Widget sample = column.widgets.get(column.tags.get(0)).get(0);
-		column.rowHeight = sample.getOriginalHeight();
-		column.rowWidth = sample.getOriginalWidth();
+		if (nativeRowHeight <= 0 || nativeRowWidth <= 0)
+		{
+			nativeRowHeight = sample.getOriginalHeight();
+			nativeRowWidth = sample.getOriginalWidth();
+		}
+		column.rowHeight = nativeRowHeight;
+		column.rowWidth = nativeRowWidth;
 		column.rowX = sample.getOriginalX();
 
 		if (column.rowHeight <= 0 || column.rowWidth <= 0)
@@ -242,7 +275,7 @@ class TabStrip
 		// y without redoing core's clamping against the incinerator and the storage
 		// popup.
 		column.firstY = column.scroll.getOriginalY() + MARGIN;
-		column.slots = column.scroll.getOriginalHeight() / (column.rowHeight + MARGIN);
+		column.available = column.scroll.getOriginalHeight();
 		column.tabSprite = inactiveSprite(column);
 
 		return column;
@@ -291,9 +324,17 @@ class TabStrip
 		}
 
 		// Don't leave a folder pointing at a tab core or another client deleted.
-		if (!detached && store.retain(column.tags))
+		// Only worth asking when the tab list is not the one already checked: a tab
+		// cannot have gone anywhere while the list stayed the same, and this is a
+		// path that deletes folders and saves, which is not work to repeat on a
+		// list we have not seen change.
+		if (!detached && !column.tags.equals(checked))
 		{
-			store.save();
+			checked = new ArrayList<>(column.tags);
+			if (store.retain(column.tags))
+			{
+				store.save();
+			}
 		}
 
 		hook(column);
@@ -314,8 +355,22 @@ class TabStrip
 				// drawing it, so the two can't disagree and turning this plugin
 				// off leaves a folder's tabs side by side. A failed write is
 				// survivable, the column is still drawn grouped.
-				order.normalize(grouped, column.tags);
+				//
+				// Asked once per order and list, because a refused write stays
+				// refused until one of them changes. Without that, a column core
+				// will not let us reorder is re-asked on every bank rebuild.
+				if (!grouped.equals(requested) || !column.tags.equals(requestedFor))
+				{
+					requested = new ArrayList<>(grouped);
+					requestedFor = new ArrayList<>(column.tags);
+					order.normalize(grouped, column.tags);
+				}
 				drawn = grouped;
+			}
+			else
+			{
+				requested = null;
+				requestedFor = null;
 			}
 			rows = Rows.build(store, drawn);
 		}
@@ -403,29 +458,78 @@ class TabStrip
 			}
 		}
 
-		int max = Math.max(0, rows.size() - column.slots);
-		offset = Math.max(0, Math.min(offset, max));
+		int[] heights = new int[rows.size()];
+		for (int i = 0; i < heights.length; i++)
+		{
+			heights[i] = heightOf(column, rows.get(i));
+		}
+
+		offset = Math.max(0, Math.min(offset, lastOffset(heights, column.available)));
 
 		int y = column.firstY;
-		int end = Math.min(rows.size(), offset + column.slots);
+		int bottom = column.scroll.getOriginalY() + column.available;
 
-		for (int i = offset; i < end; i++)
+		for (int i = offset; i < rows.size(); i++)
 		{
 			Rows.Row row = rows.get(i);
+			int height = heights[i];
+			if (y + height > bottom)
+			{
+				break;
+			}
+
 			if (row.isHeader())
 			{
 				drawHeader(column, row.folder(), y);
 			}
 			else
 			{
-				drawTab(column, row, y);
+				drawTab(column, row, y, height);
 			}
-			y += column.rowHeight + MARGIN;
+			y += height + MARGIN;
 		}
 
 		Widget[] children = column.parent.getChildren();
 		childCount = children == null ? -1 : children.length;
 		hadRows = !created.isEmpty();
+	}
+
+	/**
+	 * How tall a row is drawn. Only the tabs inside a folder shorten: a heading is
+	 * a row to look at like any other, and a tab in no folder has nothing to be
+	 * smaller than.
+	 *
+	 * Shortening the row rather than scaling the tab is what keeps the icon sharp.
+	 * The row still has to hold a full-size icon, and it is never grown, so a tab
+	 * core draws shorter than that is left alone.
+	 */
+	private int heightOf(Column column, Rows.Row row)
+	{
+		if (row.isHeader() || row.folder() == null)
+		{
+			return column.rowHeight;
+		}
+		return Math.min(column.rowHeight, Constants.ITEM_SPRITE_HEIGHT + COMPACT_PADDING);
+	}
+
+	/**
+	 * The furthest the column can scroll and still be full, given what each row
+	 * costs. A row costs its height plus the gap above it, which is why the first
+	 * one starts a gap below the top of the scroll widget.
+	 */
+	static int lastOffset(int[] heights, int available)
+	{
+		int used = 0;
+		for (int i = heights.length - 1; i >= 0; i--)
+		{
+			int cost = heights[i] + MARGIN;
+			if (used + cost > available)
+			{
+				return i + 1;
+			}
+			used += cost;
+		}
+		return 0;
 	}
 
 	/**
@@ -435,7 +539,7 @@ class TabStrip
 	 * position is touched, so the options, layout state and drag behaviour stay
 	 * core's.
 	 */
-	private void drawTab(Column column, Rows.Row row, int y)
+	private void drawTab(Column column, Rows.Row row, int y, int height)
 	{
 		List<Widget> widgets = column.widgets.get(row.tag());
 		if (widgets == null || widgets.isEmpty())
@@ -445,14 +549,28 @@ class TabStrip
 
 		Widget background = widgets.get(0);
 		background.setOriginalY(y);
+		background.setOriginalWidth(column.rowWidth);
+		background.setOriginalHeight(height);
 		background.setHidden(false);
 		background.revalidate();
 		tagByWidget.put(background, row.tag());
 
+		// Written outright from core's own numbers rather than from what the widget
+		// currently holds, so a redraw cannot compound and turning the setting off
+		// puts everything back without waiting for core to rebuild. The icon is
+		// never resized: it sits at its native size on a shorter row, which is the
+		// whole point. Centred, that is core's own 4 below a 40-high tab and 1 below
+		// a shortened one.
 		for (int i = 1; i < widgets.size(); i++)
 		{
 			Widget widget = widgets.get(i);
-			widget.setOriginalY(y + Math.max(0, (column.rowHeight - widget.getOriginalHeight()) / 2));
+			if (widget.getItemId() > 0)
+			{
+				widget.setOriginalX(column.rowX + ICON_INSET);
+				widget.setOriginalWidth(Constants.ITEM_SPRITE_WIDTH);
+				widget.setOriginalHeight(Constants.ITEM_SPRITE_HEIGHT);
+			}
+			widget.setOriginalY(y + Math.max(0, (height - widget.getOriginalHeight()) / 2));
 			widget.setHidden(false);
 			widget.revalidate();
 			tagByWidget.put(widget, row.tag());
@@ -468,7 +586,7 @@ class TabStrip
 			edge.setOriginalX(column.rowX);
 			edge.setOriginalY(y);
 			edge.setOriginalWidth(2);
-			edge.setOriginalHeight(column.rowHeight);
+			edge.setOriginalHeight(height);
 			edge.setHidden(false);
 			edge.revalidate();
 		}
@@ -704,6 +822,11 @@ class TabStrip
 		offset = 0;
 		childCount = -1;
 		hadRows = false;
+		nativeRowHeight = -1;
+		nativeRowWidth = -1;
+		checked = null;
+		requested = null;
+		requestedFor = null;
 	}
 
 	/**

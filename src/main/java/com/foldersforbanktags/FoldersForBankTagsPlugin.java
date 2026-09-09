@@ -20,6 +20,7 @@ import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
@@ -79,12 +80,20 @@ public class FoldersForBankTagsPlugin extends Plugin
 	@Inject
 	private BankTagsConfig bankTagsConfig;
 
+	@Inject
+	private EventBus eventBus;
+
 
 	/** Only warn about the column being switched off once. */
 	private boolean warned;
 
 	/** Height the overview grid needs, or -1 when it is not open. */
 	private int overviewHeight = -1;
+
+	/** A drop core is about to rebuild its tabs for. See {@link DropRepair}. */
+	private boolean dropped;
+
+	private final DropRepair dropRepair = new DropRepair(this::repairAfterDrop);
 
 	@Provides
 	FoldersForBankTagsConfig provideConfig(ConfigManager configManager)
@@ -95,6 +104,8 @@ public class FoldersForBankTagsPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		eventBus.register(dropRepair);
+
 		clientThread.invoke(() ->
 		{
 			warned = false;
@@ -108,6 +119,7 @@ public class FoldersForBankTagsPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		eventBus.unregister(dropRepair);
 		clientThread.invoke(strip::detach);
 	}
 
@@ -287,7 +299,9 @@ public class FoldersForBankTagsPlugin extends Plugin
 	{
 		if (BankTagsPlugin.CONFIG_GROUP.equals(event.getGroup()))
 		{
-			if (BankTagsPlugin.TAG_TABS_CONFIG.equals(event.getKey()))
+			// Our own regrouping write comes back through here. Reconciling it
+			// would diff a change we made and redraw a column we just drew.
+			if (BankTagsPlugin.TAG_TABS_CONFIG.equals(event.getKey()) && !tabOrder.isWriting())
 			{
 				onTabListChanged(csv(event.getOldValue()), csv(event.getNewValue()));
 			}
@@ -432,6 +446,10 @@ public class FoldersForBankTagsPlugin extends Plugin
 			return;
 		}
 
+		// Noted before core gets the event, because core nulls the target on some
+		// drops and we null it ourselves on the rest.
+		dropped |= client.getMouseCurrentButton() == 0;
+
 		boolean draggingOurs = isOurs(dragged);
 		boolean droppingOnOurs = isOurs(target);
 
@@ -456,10 +474,48 @@ public class FoldersForBankTagsPlugin extends Plugin
 		{
 			log.warn("Folder drop failed", e);
 		}
+	}
 
-		// Core rebuilds its tabs on release either way, which drops our rows, so
-		// queue this to land after it.
-		clientThread.invokeLater(this::redraw);
+	/**
+	 * Draw the column again once core has finished with a drop.
+	 *
+	 * Core rebuilds its tabs on release for every drop it does not otherwise
+	 * handle, moving a bank item included, and that rebuild takes our rows with
+	 * it. Doing this on the next tick instead left a frame of core's flat column
+	 * on screen, which is what the flicker was: core does its own rebuild inside
+	 * the same handler, so it never shows one.
+	 */
+	private void repairAfterDrop()
+	{
+		if (dropped)
+		{
+			dropped = false;
+			redraw();
+		}
+	}
+
+	/**
+	 * The other half of {@link #onWidgetDrag}, running after core instead of
+	 * before it.
+	 *
+	 * A separate object because the event bus requires a subscriber to be named
+	 * after its event, so one class cannot subscribe to {@code WidgetDrag} twice,
+	 * and the half above has to stay ahead of core to take a drop off it.
+	 */
+	static class DropRepair
+	{
+		private final Runnable repair;
+
+		DropRepair(Runnable repair)
+		{
+			this.repair = repair;
+		}
+
+		@Subscribe(priority = -100)
+		public void onWidgetDrag(WidgetDrag event)
+		{
+			repair.run();
+		}
 	}
 
 	/** A folder row and a folder tile are the same folder, so both views answer. */

@@ -55,9 +55,6 @@ class FolderStore
 	private final List<Folder> folders = new ArrayList<>();
 	private final Map<String, Folder> byTag = new HashMap<>();
 
-	/** Set while we are writing, so our own config event can be ignored. */
-	private boolean saving;
-
 	@Inject
 	FolderStore(ConfigManager configManager, Gson gson)
 	{
@@ -105,20 +102,7 @@ class FolderStore
 		stored.version = FORMAT;
 		stored.folders = folders;
 
-		saving = true;
-		try
-		{
-			configManager.setConfiguration(GROUP, KEY_FOLDERS, gson.toJson(stored));
-		}
-		finally
-		{
-			saving = false;
-		}
-	}
-
-	boolean isSaving()
-	{
-		return saving;
+		configManager.setConfiguration(GROUP, KEY_FOLDERS, gson.toJson(stored));
 	}
 
 	private void reindex()
