@@ -299,9 +299,12 @@ public class FoldersForBankTagsPlugin extends Plugin
 			return;
 		}
 
-		// Not our own folders: reacting to that write would schedule a redraw,
-		// which can save, which writes again.
-		if (FolderStore.GROUP.equals(event.getGroup()) && !FolderStore.KEY_FOLDERS.equals(event.getKey()))
+		// Settings only. Reacting to our own folder write would schedule a redraw,
+		// which can save, which writes again, and the scroll position is written by
+		// the redraw that already drew it.
+		if (FolderStore.GROUP.equals(event.getGroup())
+			&& !FolderStore.KEY_FOLDERS.equals(event.getKey())
+			&& !FoldersForBankTagsConfig.KEY_SCROLL.equals(event.getKey()))
 		{
 			clientThread.invokeLater(this::redraw);
 		}

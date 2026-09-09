@@ -328,8 +328,12 @@ class TabStrip
 	 * Take over the scroll controls. Core scrolls by an index into its flat tab
 	 * list, which is not what is drawn once folders are closed, so its arithmetic
 	 * lands on the wrong row. Replacing the listeners on the widgets it already
-	 * made beats adding a second set of arrows, and core rebuilds these widgets
-	 * each time the bank opens, which is when the offset should reset anyway.
+	 * made beats adding a second set of arrows.
+	 *
+	 * Core makes these widgets afresh each time the bank opens, so this is also
+	 * where the scroll position comes back. Bank Tags restores its own from config
+	 * at the same point; leaving ours at zero was what sent the column to the top
+	 * on every open.
 	 */
 	private void hook(Column column)
 	{
@@ -339,7 +343,7 @@ class TabStrip
 		}
 
 		hooked = column.scroll;
-		offset = 0;
+		offset = Math.max(0, config.scroll());
 
 		column.scroll.setHasListener(true);
 		column.scroll.setOnScrollWheelListener((JavaScriptCallback) event -> scroll(event.getMouseY()));
@@ -361,6 +365,13 @@ class TabStrip
 	{
 		offset += delta;
 		refresh();
+
+		// Saved after the redraw, which is what clamps it, so the stored row is
+		// one that exists rather than whatever the wheel added up to.
+		if (offset != config.scroll())
+		{
+			config.scroll(offset);
+		}
 	}
 
 	private void draw(Column column, List<Rows.Row> rows)

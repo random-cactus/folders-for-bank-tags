@@ -208,13 +208,28 @@ class OverviewGrid
 	 * The stretches of tiles that belong to one folder and sit on one row. A run
 	 * ends at a different folder, at a tab in no folder, or at the edge of the
 	 * row, so a folder that wraps is two runs rather than one line drawn across
-	 * the gap. Runs of one are left out, since a closed folder has nothing under
-	 * it to group.
+	 * the gap.
+	 *
+	 * A run of one tile still gets a line when the folder has tiles on another row,
+	 * because then the line is the only thing saying the stray tile belongs to the
+	 * folder above it. The tile a wrap leaves on its own is the common case. What
+	 * is left out is a folder whose whole presence in the grid is one tile, which
+	 * is a closed folder: there is nothing under it to group, and a line would
+	 * claim the tab beside it.
 	 *
 	 * @return {first, last} index pairs into {@code placed}
 	 */
 	static List<int[]> runs(List<Placed> placed)
 	{
+		Map<Object, Integer> tiles = new IdentityHashMap<>();
+		for (Placed tile : placed)
+		{
+			if (tile.folder != null)
+			{
+				tiles.merge(tile.folder, 1, Integer::sum);
+			}
+		}
+
 		List<int[]> out = new ArrayList<>();
 
 		int i = 0;
@@ -235,7 +250,7 @@ class OverviewGrid
 				end++;
 			}
 
-			if (end > i)
+			if (end > i || tiles.get(first.folder) > 1)
 			{
 				out.add(new int[]{i, end});
 			}

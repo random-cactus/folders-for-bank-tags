@@ -83,13 +83,30 @@ public class UnderlineTest
 		assertArrayEquals(new int[]{2, 3}, runs.get(0));
 	}
 
-	/** The tile left alone by a wrap is not underlined by itself. */
+	/**
+	 * A wrap that leaves the folder's header alone at the end of a row still marks
+	 * it, or the tabs below look like they belong to nothing.
+	 */
 	@Test
-	public void aWrapLeavingOneTileBehindDropsThatLine()
+	public void aWrapLeavingOneTileBehindStillMarksIt()
 	{
 		List<int[]> runs = runs(4, null, null, null, A, A, A);
-		assertEquals(1, runs.size());
-		assertArrayEquals(new int[]{4, 5}, runs.get(0));
+		assertEquals(2, runs.size());
+		assertArrayEquals(new int[]{3, 3}, runs.get(0));
+		assertArrayEquals(new int[]{4, 5}, runs.get(1));
+	}
+
+	/**
+	 * The reported case: the folder fills the end of one row and its last tab lands
+	 * alone on the next. That tab is in the folder and has to say so.
+	 */
+	@Test
+	public void aWrapLeavingOneTabOnTheNextRowStillMarksIt()
+	{
+		List<int[]> runs = runs(4, null, A, A, A, A);
+		assertEquals(2, runs.size());
+		assertArrayEquals(new int[]{1, 3}, runs.get(0));
+		assertArrayEquals(new int[]{4, 4}, runs.get(1));
 	}
 
 	@Test
@@ -100,7 +117,7 @@ public class UnderlineTest
 		for (int[] run : runs)
 		{
 			assertTrue(Arrays.toString(run), run[0] > previousEnd);
-			assertTrue(Arrays.toString(run), run[1] > run[0]);
+			assertTrue(Arrays.toString(run), run[1] >= run[0]);
 			previousEnd = run[1];
 		}
 	}

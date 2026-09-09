@@ -9,10 +9,12 @@ import net.runelite.client.config.ConfigItem;
 @ConfigGroup(FolderStore.GROUP)
 public interface FoldersForBankTagsConfig extends Config
 {
+	String KEY_SCROLL = "scroll";
+
 	@ConfigItem(
 		keyName = "markMembers",
 		name = "Mark folder contents",
-		description = "Show which tabs are inside which folder: a coloured edge beside them in the side column, and a line under the folder and its tabs together in the tag tab overview.",
+		description = "Visually mark the tabs that are in a folder, so you can see which are grouped together.",
 		position = 1
 	)
 	default boolean markMembers()
@@ -53,4 +55,27 @@ public interface FoldersForBankTagsConfig extends Config
 	{
 		return false;
 	}
+
+	/**
+	 * How far the column was scrolled, kept the way Bank Tags keeps its own: not a
+	 * setting, so hidden from the panel. Counted in our rows rather than core's
+	 * tabs, since a closed folder is one row here and several there.
+	 */
+	@ConfigItem(
+		keyName = KEY_SCROLL,
+		name = "",
+		description = "",
+		hidden = true
+	)
+	default int scroll()
+	{
+		return 0;
+	}
+
+	@ConfigItem(
+		keyName = KEY_SCROLL,
+		name = "",
+		description = ""
+	)
+	void scroll(int row);
 }
