@@ -1,28 +1,26 @@
-# Folders for Bank Tags
+## Folders for Bank Tags
+![Disable Plugin](images/disable-plugin.gif)
+This plugin allows you to create folders for **Bank Tag Tabs**.  
+Requires Plugin **Bank Tags** to be enabled with option **Use tag tabs** enabled.  
+This plugin does not modify the Bank Tags config in any way, so therefore can safely be enabled or disabled at any time without affecting the underlying Bank Tag Tabs.  
+![Bank Tags Plugin Settings](images/bank-tags-settings.png)
 
-An add-on to the **Bank Tags** plugin
+## How to Use
+### Creating Folders
+Right-click a tab, **Add to folder** -> Choose an existing folder or make a new one.  
+Optionally, set a custom icon for the folder.  
+Add a tab to a folder by dragging the tab onto the folder icon.  
+![Create a Folder](images/create-folder.gif)
 
-Collapsible folders for the bank tag tab column.
+Left click a folder to expand its contents.  
+![Expanded Folder](images/open-folder.gif)
 
-If you keep more tag tabs than fit down the side of the bank, this groups them.
-Right-click a tab to put it in a folder, then close the folder to get it out of
-the way.
+### Deleting Folders
+Right click a folder, **Delete folder**
+All of the folder contents will spill out of the folder into the position where the folder was
+![Delete Folder](images/delete-folder.gif)
 
-![Collapsed Folder](collapsed.png "Collapsed Folder")
-![Expanded Folder](expanded.png "Expanded Folder")
-
-## Using it
-
-| Gesture | Result |
-| --- | --- |
-| Right-click a tab, **Add to folder** | Choose an existing folder or make a new one |
-| Right-click a tab in a folder, **Remove from folder** | Puts it back at the top level |
-| Left-click a folder | Opens or closes it |
-| Right-click a folder | Rename, Change icon, Delete folder |
-| Drag a tab onto a folder | Files it into that folder and opens it |
-| Drag a folder onto a tab or another folder | Moves the whole folder there |
-
-## Licence and credits
+## License and Credits
 
 This plugin was built from the [Bank Tag Folders](https://github.com/kingkj52/bank-tag-folders)
 plugin by KingKj52 and is a derivative of it. That plugin is BSD 2-Clause and so
