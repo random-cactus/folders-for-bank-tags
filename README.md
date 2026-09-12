@@ -1,7 +1,9 @@
 ## Folders for Bank Tags
-![Disable Plugin](images/disable-plugin.gif)
+<img src="images/folder-open-png.png" width="350" height="220" />
+<img src="images/folder-closed-png.png" width="350" height="220" />
+  
 This plugin allows you to create folders for **Bank Tag Tabs**.  
-Requires Plugin **Bank Tags** to be enabled with option **Use tag tabs** enabled.  
+Requires Plugin **Bank Tags** to be enabled with option `Use tag tabs` enabled.  
 This plugin does not modify the Bank Tags config in any way, so therefore can safely be enabled or disabled at any time without affecting the underlying Bank Tag Tabs.  
 ![Bank Tags Plugin Settings](images/bank-tags-settings.png)
 
@@ -10,15 +12,14 @@ This plugin does not modify the Bank Tags config in any way, so therefore can sa
 Right-click a tab, **Add to folder** -> Choose an existing folder or make a new one.  
 Optionally, set a custom icon for the folder.  
 Add a tab to a folder by dragging the tab onto the folder icon.  
-![Create a Folder](images/create-folder.gif)
-
+![Create Folder](images/create-folder.gif)  
 Left click a folder to expand its contents.  
-![Expanded Folder](images/open-folder.gif)
+![Expand Folder](images/open-folder.gif)  
 
 ### Deleting Folders
 Right click a folder, **Delete folder**
 All of the folder contents will spill out of the folder into the position where the folder was  
-![Delete Folder](images/delete-folder.gif)
+![Delete Folder](images/delete-folder.gif)  
 
 ## Help and Discussion
 If you've experienced an issue with, or have a recommendation on how to improve it, please create an [issue](https://github.com/random-cactus/folders-for-bank-tags/issues) with the relevant details.
