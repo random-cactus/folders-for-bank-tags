@@ -20,6 +20,9 @@ Right click a folder, **Delete folder**
 All of the folder contents will spill out of the folder into the position where the folder was
 ![Delete Folder](images/delete-folder.gif)
 
+## Help and Discussion
+If you've experienced an issue with, or have a recommendation on how to improve it, please create an [issue](https://github.com/random-cactus/folders-for-bank-tags/issues) with the relevant details.
+
 ## License and Credits
 
 This plugin was built from the [Bank Tag Folders](https://github.com/kingkj52/bank-tag-folders)
