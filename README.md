@@ -17,7 +17,7 @@ Left click a folder to expand its contents.
 
 ### Deleting Folders
 Right click a folder, **Delete folder**
-All of the folder contents will spill out of the folder into the position where the folder was
+All of the folder contents will spill out of the folder into the position where the folder was  
 ![Delete Folder](images/delete-folder.gif)
 
 ## Help and Discussion
